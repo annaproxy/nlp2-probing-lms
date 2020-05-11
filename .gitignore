@@ -2,3 +2,7 @@
 gulordava.pt
 *.pyc
 .ipynb_checkpoints/
+
+# Main directory and recursive
+*.pickle
+**.pickle
