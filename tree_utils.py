@@ -155,7 +155,7 @@ def init_corpus(path, lm, w2i, concat=False, cutoff=None):
     return gold_distances, embs
 
 def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None):
-    model_name = 'RNN' if type(lm) == RNNModel else 'Transformer'
+    model_name = 'RNN' if type(lm) == RNNModel else 'transformer'
 
     data_file = os.path.join('data', 'en_ewt-ud-'+set_type+'.conllu')
     save_file = os.path.join('corpus', model_name + "_structural" + set_type + ".pickle")
@@ -163,8 +163,10 @@ def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None):
     if os.path.exists(save_file):
         with open(save_file, "rb") as f: 
             return pickle.load(f)
-    corpus = init_corpus(data_file, lm, w2i, cutoff=cutoff)
+    true_distances, reprs = init_corpus(data_file, lm, w2i, cutoff=cutoff)
+
     print("Data created,pickling")
     with open(save_file, "wb") as f: 
-        pickle.dump(corpus, f)
-    return corpus
+        pickle.dump({'x':reprs, 'y': true_distances}, f)
+
+    return true_distances, reprs

@@ -155,7 +155,8 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None):
         vocab: vocab to use for the next iteration if first time saving, None otherwise
         words: all words to use for control task
     """
-    model_name = 'RNN' if type(lm) == RNNModel else 'Transformer'
+    model_name = 'RNN' if type(lm) == RNNModel else 'transformer'
+
     save_filename = os.path.join('corpus', model_name + '_pos'+set_type+'.pickle')
     words_filename = os.path.join('words', set_type+'.pickle')
     if os.path.exists(save_filename):
@@ -175,15 +176,16 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None):
         )
 
     print("Data created. Pickling now")
+
+    # Pickle corpus and true y-labels
     if not os.path.exists("corpus"):
         os.makedirs("corpus")
-
     with open(save_filename, "wb") as f:
         pickle.dump({"x":x, "y":y}, f)
 
+    # Pickle words for control task
     if not os.path.exists("words"):
         os.makedirs("words") 
-
     with open(words_filename,"wb") as fp: 
         pickle.dump(words, fp)
 
