@@ -92,7 +92,8 @@ def edges(mst):
     locations = np.argwhere(mst == 1)
 
     for elem in locations:
-        edges.add((elem[0], elem[1]))
+        result = (elem[0], elem[1])
+        edges.add(result)
         
     return edges
 
@@ -102,13 +103,20 @@ def calc_uuas(pred_distances, gold_distances):
     # Get both MSTs
     pred_mst = create_mst(pred_distances)
     gold_mst = create_mst(gold_distances)
-    
+
     # Get their edges
     pred_edges = edges(pred_mst)
     gold_edges = edges(gold_mst)
     
-
+    #print(pred_mst)
+    #print(pred_edges)
+    #raise ValueError("Hi")
     # Calculate uuas
+    #print(pred_edges, pred_edges[0], sorted(tuple(pred_edges[0])))
+    #print(type(pred_edges[0]), type(sorted(tuple(pred_edges[0]))))
+    #print([z for z in pred_edges])
+    #print([tuple(sorted(z)) for z in pred_edges])
+
     uuas = np.sum([pred_edge in gold_edges for pred_edge in pred_edges]) / len(gold_edges)
     #print(uuas)
 #     if not math.isnan(uuas):
@@ -167,6 +175,24 @@ def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None):
 
     print("Data created,pickling")
     with open(save_file, "wb") as f: 
-        pickle.dump({'x':reprs, 'y': true_distances}, f)
+        pickle.dump((true_distances, reprs), f)
 
     return true_distances, reprs
+
+
+
+def print_tikz(prediction_edges, gold_edges, words, split_name):
+    ''' Turns edge sets on word (nodes) into tikz dependency LaTeX. '''
+    with open(os.path.join( split_name+'.tikz'), 'a') as fout:
+      string = """\\begin{dependency}[hide label, edge unit distance=.5ex]
+    \\begin{deptext}[column sep=0.05cm]
+    """ 
+      string += "\\& ".join([x.replace('$', '\$').replace('&', '+') for x in words]) + " \\\\" + '\n'
+      string += "\\end{deptext}" + '\n'
+      for i_index, j_index in gold_edges:
+        string += '\\depedge{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
+      for i_index, j_index in prediction_edges:
+        string += '\\depedge[edge style={{red!60!}}, edge below]{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
+      string += '\\end{dependency}\n'
+      fout.write('\n\n')
+      fout.write(string)
