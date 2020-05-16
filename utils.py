@@ -6,6 +6,7 @@ from torch import Tensor
 from typing import List 
 from lstm.model import RNNModel 
 from conllu import parse_incr, TokenList
+from tqdm import tqdm
 
 pos_w2i = dict()
 pos_i2w = dict()
@@ -37,7 +38,7 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
     sentences_result = []
     global_words = []
     
-    for sentence_nr, sentence in enumerate(ud_parses):
+    for sentence_nr, sentence in tqdm(enumerate(ud_parses)):
         sentence_words = []
         
         # First build string sentence repr with spaces and such
@@ -169,7 +170,7 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None):
     # If not exists
     x,y,vocab,words = create_data(
             os.path.join('data', 'en_ewt-ud-'+set_type+'.conllu'),
-            lm, 
+            lm,  
             w2i,
             pos_vocab,
             cutoff

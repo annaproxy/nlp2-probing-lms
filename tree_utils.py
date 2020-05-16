@@ -184,15 +184,15 @@ def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None):
 def print_tikz(prediction_edges, gold_edges, words, split_name):
     ''' Turns edge sets on word (nodes) into tikz dependency LaTeX. '''
     with open(os.path.join( split_name+'.tikz'), 'a') as fout:
-      string = """\\begin{dependency}[hide label, edge unit distance=.5ex]
-    \\begin{deptext}[column sep=0.05cm]
-    """ 
-      string += "\\& ".join([x.replace('$', '\$').replace('&', '+') for x in words]) + " \\\\" + '\n'
-      string += "\\end{deptext}" + '\n'
-      for i_index, j_index in gold_edges:
-        string += '\\depedge{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
-      for i_index, j_index in prediction_edges:
-        string += '\\depedge[edge style={{red!60!}}, edge below]{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
-      string += '\\end{dependency}\n'
-      fout.write('\n\n')
-      fout.write(string)
+        string = """\\begin{dependency}[hide label, edge unit distance=.5ex]
+        \\begin{deptext}[column sep=0.05cm]
+        """ 
+        string += "\\& ".join([x.replace('$', '\$').replace('&', '+') for x in words]) + " \\\\" + '\n'
+        string += "\\end{deptext}" + '\n'
+        for i_index, j_index in gold_edges:
+            string += '\\depedge{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
+        for i_index, j_index in prediction_edges:
+            string += '\\depedge[edge style={{red!60!}}, edge below]{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
+        string += '\\end{dependency}\n'
+        fout.write('\n\n')
+        fout.write(string)
