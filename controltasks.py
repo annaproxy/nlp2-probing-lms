@@ -82,14 +82,14 @@ def fake_gold_distances(corpus, behave_dict):
             
         tokentree = item.to_tree()
         test = tokentree_to_ete(tokentree)
-        dists = [node.get_distance(node2) for node in test.traverse() for node2 in test.traverse()]
 
-        # Turn it into a tensor, view, append
-        dists = torch.tensor(dists)
-        boy = int(np.sqrt(len(dists)))
-        assert boy == n, "Horrible"
-        dists = dists.view(boy,boy)
-        all_distances.append(dists)
+        distances = torch.zeros(n,n)
+        for node1 in test.traverse():
+            for node2 in test.traverse():
+                no1 = int(node1.name) - 1
+                no2 = int(node2.name) - 1
+                distances[no1,no2] = node1.get_distance(node2)
+        all_distances.append(distances)
     return all_distances, behave_dict
 
 def save_or_load_pos_controls(train_x =None, train_y=None, flattened_lists=None, dist=None):

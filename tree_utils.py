@@ -65,12 +65,17 @@ def create_gold_distances(corpus):
         distances = torch.zeros((sen_len, sen_len))
         
         # Traverse tree in two directions and get all distances
-        dists = []
-        dists = [node.get_distance(node2) for node in ete_tree.traverse() for node2 in ete_tree.traverse()]            
+        #dists = []
+        #dists = [node.get_distance(node2) for node in ete_tree.traverse() for node2 in ete_tree.traverse()]            
 
         # Turn it into a tensor, view, append
-        dists = torch.tensor(dists)
-        distances = dists.view(sen_len, sen_len)
+        #dists = torch.tensor(dists)
+        for node1 in ete_tree.traverse():
+            for node2 in ete_tree.traverse():
+                no1 = int(node1.name) - 1
+                no2 = int(node2.name) - 1
+                distances[no1,no2] = node1.get_distance(node2)
+        #distances = distances.view(sen_len, sen_len)
         all_distances.append(distances)
 
     return all_distances
