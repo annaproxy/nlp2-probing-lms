@@ -89,16 +89,9 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
                     representation += e
                     sizes.append(len(e))
             the_input = torch.tensor(representation)
-            print("PRE INPUT SHAPE", the_input.shape)
-            #print("REPRESENTATION", representation)
-            #print(f"INPUT: {the_input}")
             with torch.no_grad():
-                #print(the_input)
-                #print(the_input.shape)
                 the_input = the_input.unsqueeze(0)
                 result = model(the_input)[0]
-                print(len(sentence_words))
-                print(f'RESULT SHAPE: {result.shape}')
                 result = result.squeeze(0)
             final_repr = []
             
@@ -112,9 +105,7 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
             sentences_result.append(torch.stack(final_repr).squeeze(1))
            
     if concat:
-        print("S shaped")
         for s in sentences_result:
-            print(s.shape)
         yes = torch.cat([s for s in sentences_result], dim=0)
         if get_pos: return yes, torch.tensor(pos_result), global_words
         return yes
