@@ -106,7 +106,7 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
            
     if concat:
         for s in sentences_result:
-        yes = torch.cat([s for s in sentences_result], dim=0)
+            yes = torch.cat([s for s in sentences_result], dim=0)
         if get_pos: return yes, torch.tensor(pos_result), global_words
         return yes
     
