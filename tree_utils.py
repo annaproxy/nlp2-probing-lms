@@ -65,12 +65,17 @@ def create_gold_distances(corpus):
         distances = torch.zeros((sen_len, sen_len))
         
         # Traverse tree in two directions and get all distances
-        dists = []
-        dists = [node.get_distance(node2) for node in ete_tree.traverse() for node2 in ete_tree.traverse()]            
+        #dists = []
+        #dists = [node.get_distance(node2) for node in ete_tree.traverse() for node2 in ete_tree.traverse()]            
 
         # Turn it into a tensor, view, append
-        dists = torch.tensor(dists)
-        distances = dists.view(sen_len, sen_len)
+        #dists = torch.tensor(dists)
+        for node1 in ete_tree.traverse():
+            for node2 in ete_tree.traverse():
+                no1 = int(node1.name) - 1
+                no2 = int(node2.name) - 1
+                distances[no1,no2] = node1.get_distance(node2)
+        #distances = distances.view(sen_len, sen_len)
         all_distances.append(distances)
 
     return all_distances
@@ -92,7 +97,8 @@ def edges(mst):
     locations = np.argwhere(mst == 1)
 
     for elem in locations:
-        edges.add((elem[0], elem[1]))
+        result = (elem[0], elem[1])
+        edges.add(result)
         
     return edges
 
@@ -102,13 +108,20 @@ def calc_uuas(pred_distances, gold_distances):
     # Get both MSTs
     pred_mst = create_mst(pred_distances)
     gold_mst = create_mst(gold_distances)
-    
+
     # Get their edges
     pred_edges = edges(pred_mst)
     gold_edges = edges(gold_mst)
     
-
+    #print(pred_mst)
+    #print(pred_edges)
+    #raise ValueError("Hi")
     # Calculate uuas
+    #print(pred_edges, pred_edges[0], sorted(tuple(pred_edges[0])))
+    #print(type(pred_edges[0]), type(sorted(tuple(pred_edges[0]))))
+    #print([z for z in pred_edges])
+    #print([tuple(sorted(z)) for z in pred_edges])
+
     uuas = np.sum([pred_edge in gold_edges for pred_edge in pred_edges]) / len(gold_edges)
     #print(uuas)
 #     if not math.isnan(uuas):
@@ -155,7 +168,7 @@ def init_corpus(path, lm, w2i, concat=False, cutoff=None):
     return gold_distances, embs
 
 def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None):
-    model_name = 'RNN' if type(lm) == RNNModel else 'Transformer'
+    model_name = 'RNN' if type(lm) == RNNModel else 'transformer'
 
     data_file = os.path.join('data', 'en_ewt-ud-'+set_type+'.conllu')
     save_file = os.path.join('corpus', model_name + "_structural" + set_type + ".pickle")
@@ -163,8 +176,28 @@ def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None):
     if os.path.exists(save_file):
         with open(save_file, "rb") as f: 
             return pickle.load(f)
-    corpus = init_corpus(data_file, lm, w2i, cutoff=cutoff)
+    true_distances, reprs = init_corpus(data_file, lm, w2i, cutoff=cutoff)
+
     print("Data created,pickling")
     with open(save_file, "wb") as f: 
-        pickle.dump(corpus, f)
-    return corpus
+        pickle.dump((true_distances, reprs), f)
+
+    return true_distances, reprs
+
+
+
+def print_tikz(prediction_edges, gold_edges, words, split_name):
+    ''' Turns edge sets on word (nodes) into tikz dependency LaTeX. '''
+    with open(os.path.join( split_name+'.tikz'), 'a') as fout:
+        string = """\\begin{dependency}[hide label, edge unit distance=.5ex]
+        \\begin{deptext}[column sep=0.05cm]
+        """ 
+        string += "\\& ".join([x.replace('$', '\$').replace('&', '+') for x in words]) + " \\\\" + '\n'
+        string += "\\end{deptext}" + '\n'
+        for i_index, j_index in gold_edges:
+            string += '\\depedge{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
+        for i_index, j_index in prediction_edges:
+            string += '\\depedge[edge style={{red!60!}}, edge below]{{{}}}{{{}}}{{{}}}\n'.format(i_index+1,j_index+1, '.')
+        string += '\\end{dependency}\n'
+        fout.write('\n\n')
+        fout.write(string)

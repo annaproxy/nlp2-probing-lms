@@ -6,6 +6,7 @@ from torch import Tensor
 from typing import List 
 from lstm.model import RNNModel 
 from conllu import parse_incr, TokenList
+from tqdm import tqdm
 
 pos_w2i = dict()
 pos_i2w = dict()
@@ -37,7 +38,7 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
     sentences_result = []
     global_words = []
     
-    for sentence_nr, sentence in enumerate(ud_parses):
+    for sentence_nr, sentence in tqdm(enumerate(ud_parses)):
         sentence_words = []
         
         # First build string sentence repr with spaces and such
@@ -88,8 +89,17 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
                     representation += e
                     sizes.append(len(e))
             the_input = torch.tensor(representation)
+            print("PRE INPUT SHAPE", the_input.shape)
+            #print("REPRESENTATION", representation)
+            #print(f"INPUT: {the_input}")
             with torch.no_grad():
+                #print(the_input)
+                #print(the_input.shape)
+                the_input = the_input.unsqueeze(0)
                 result = model(the_input)[0]
+                print(len(sentence_words))
+                print(f'RESULT SHAPE: {result.shape}')
+                result = result.squeeze(0)
             final_repr = []
             
             i = 0
@@ -102,6 +112,9 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
             sentences_result.append(torch.stack(final_repr).squeeze(1))
            
     if concat:
+        print("S shaped")
+        for s in sentences_result:
+            print(s.shape)
         yes = torch.cat([s for s in sentences_result], dim=0)
         if get_pos: return yes, torch.tensor(pos_result), global_words
         return yes
@@ -143,7 +156,7 @@ def create_data(filename: str, lm, w2i, pos_vocab=None, cutoff=None):
 
     return sen_reps, pos_tags, pos_vocab, global_words
 
-def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None):
+def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None, extra_transformer = None):
     """
     Args:
         set_type: (train,dev,test)
@@ -155,7 +168,19 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None):
         vocab: vocab to use for the next iteration if first time saving, None otherwise
         words: all words to use for control task
     """
-    model_name = 'RNN' if type(lm) == RNNModel else 'Transformer'
+    # Remember original set type, may be overwritten with additional transformer information
+    original_set_type = set_type
+    model_name = 'RNN' if type(lm) == RNNModel else 'transformer'
+    if extra_transformer == 'BART':
+        #model_name += 'BART'
+        set_type   += '_BART'
+    if extra_transformer == 'XLNet':
+        #model_name += 'XLNet'
+        set_type   += '_XLNet'
+    if extra_transformer == 'T5':
+        #model_name += 'T5'
+        set_type   += '_T5'
+
     save_filename = os.path.join('corpus', model_name + '_pos'+set_type+'.pickle')
     words_filename = os.path.join('words', set_type+'.pickle')
     if os.path.exists(save_filename):
@@ -166,24 +191,26 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None):
         return l['x'], l['y'], None, words
 
     # If not exists
+    set_type = original_set_type
     x,y,vocab,words = create_data(
             os.path.join('data', 'en_ewt-ud-'+set_type+'.conllu'),
-            lm, 
+            lm,  
             w2i,
             pos_vocab,
             cutoff
         )
 
     print("Data created. Pickling now")
+
+    # Pickle corpus and true y-labels
     if not os.path.exists("corpus"):
         os.makedirs("corpus")
-
     with open(save_filename, "wb") as f:
         pickle.dump({"x":x, "y":y}, f)
 
+    # Pickle words for control task
     if not os.path.exists("words"):
         os.makedirs("words") 
-
     with open(words_filename,"wb") as fp: 
         pickle.dump(words, fp)
 
