@@ -167,11 +167,27 @@ def init_corpus(path, lm, w2i, concat=False, cutoff=None):
     
     return gold_distances, embs
 
-def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None):
-    model_name = 'RNN' if type(lm) == RNNModel else 'transformer'
+def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None, extra_transformer=None):
+    model_name = 'RNN' if extra_transformer == 'RNN' or type(lm) == RNNModel else 'transformer'
+
+    if extra_transformer == 'RNN' or type(lm) == RNNModel:
+        model_name = 'RNN'
+    elif extra_transformer == 'GPT2':
+        model_name = 'transformer'
+    elif extra_transformer == 'BART':
+        #model_name += 'BART'
+        set_type   += '_BART'
+    elif extra_transformer == 'XLNet':
+        #model_name += 'XLNet'
+        set_type   += '_XLNet'
+    elif extra_transformer == 'TransformerXL':
+        #model_name += 'XLNet'
+        set_type   += '_TransformerXL'
+
 
     data_file = os.path.join('data', 'en_ewt-ud-'+set_type+'.conllu')
     save_file = os.path.join('corpus', model_name + "_structural" + set_type + ".pickle")
+    print("USING SAVE FILE", save_file)
 
     if os.path.exists(save_file):
         with open(save_file, "rb") as f: 
