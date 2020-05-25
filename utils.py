@@ -7,6 +7,7 @@ from typing import List
 from lstm.model import RNNModel 
 from conllu import parse_incr, TokenList
 from tqdm import tqdm
+import numpy as np 
 
 pos_w2i = dict()
 pos_i2w = dict()
@@ -24,7 +25,7 @@ def parse_corpus(filename: str) -> List[TokenList]:
     ud_parses = list(parse_incr(data_file))
     return ud_parses
 
-def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, get_pos = False) -> List[Tensor]:
+def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, get_pos = False, shuffled=False) -> List[Tensor]:
     """
     Returns a list of length len(ud_parses)
     """
@@ -40,9 +41,14 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
     
     for sentence_nr, sentence in tqdm(enumerate(ud_parses)):
         sentence_words = []
-        
+        if shuffled:
+            random_indices = np.arange(len(sentence))
+            np.random.shuffle(random_indices )
+            #print(random_indices)
+
         # First build string sentence repr with spaces and such
-        for i, token in enumerate(sentence):
+        for i, real_token in enumerate(sentence):
+            token = real_token if not shuffled else sentence[random_indices[i]]
             if get_pos:
                 postag = token['upostag']
                 if postag in pos_w2i:
@@ -63,6 +69,8 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
             sentence_words.append(next_word)
         # Now build model representation!
         
+        #print(sentence_words)
+
         # Also add to global_words to retain word representations
         global_words.append(sentence_words)
         
@@ -103,10 +111,10 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
             
             assert len(final_repr) == len(sentence_words), "Something is wrong"
             sentences_result.append(torch.stack(final_repr).squeeze(1))
-           
+    print("WTH")
     if concat:
-        for s in sentences_result:
-            yes = torch.cat([s for s in sentences_result], dim=0)
+        #for s in sentences_result:
+        yes = torch.cat([s for s in sentences_result], dim=0)
         if get_pos: return yes, torch.tensor(pos_result), global_words
         return yes
     
@@ -137,17 +145,18 @@ def assert_sen_reps(transformer, tokenizer, lstm, vocab):
 
     print("All is well!")
 
-def create_data(filename: str, lm, w2i, pos_vocab=None, cutoff=None):
+def create_data(filename: str, lm, w2i, pos_vocab=None, cutoff=None, shuffled=False):
     """Create whole dataset """
     global pos_w2i
     ud_parses = parse_corpus(filename)[:cutoff]
     print("Creating data for", len(ud_parses))
-    sen_reps, pos_tags, global_words = fetch_sen_reps(ud_parses, lm, w2i, concat=True, get_pos=True)
+    sen_reps, pos_tags, global_words = fetch_sen_reps(ud_parses, lm, w2i, concat=True, get_pos=True, shuffled=shuffled)
+    print("Done sen reps")
     pos_vocab = pos_w2i
 
     return sen_reps, pos_tags, pos_vocab, global_words
 
-def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None, extra_transformer = None):
+def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None, extra_transformer = None, shuffled=False):
     """
     Args:
         set_type: (train,dev,test)
@@ -161,7 +170,7 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None, 
     """
     # Remember original set type, may be overwritten with additional transformer information
     original_set_type = set_type
-    model_name = 'RNN' if type(lm) == RNNModel else 'transformer'
+    model_name = 'RNN' if type(lm) == RNNModel or extra_transformer=='RNN' else 'transformer'
     if extra_transformer == 'BART':
         #model_name += 'BART'
         set_type   += '_BART'
@@ -175,6 +184,8 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None, 
         #model_name += 'T5'
         set_type   += '_TransformerXL'
 
+    if shuffled:
+        set_type += "_shuffled"
     save_filename = os.path.join('corpus', model_name + '_pos'+set_type+'.pickle')
     words_filename = os.path.join('words', set_type+'.pickle')
     print("USING SAVE", save_filename)
@@ -192,7 +203,8 @@ def create_or_load_pos_data(set_type:str, lm, w2i, pos_vocab=None, cutoff=None, 
             lm,  
             w2i,
             pos_vocab,
-            cutoff
+            cutoff, 
+            shuffled
         )
 
     print("Data created. Pickling now")
