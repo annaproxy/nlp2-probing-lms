@@ -29,12 +29,6 @@ class StructuralDataset(data.Dataset):
 def pad_batch(x):
     batch_size = len(x)
     dists, embs, lengths =  list(zip(*x))
-    try:
-        a = embs[0].shape #print(embs[0].shape)
-    except:
-        print("weird shit? Why is this a list sometimes?")
-        embs = embs[0]
-        #print(len(embs[0]), embs[0][0].shape, embs[0][2].shape)
     max_length = max(lengths)
 
     padded_dists = torch.zeros((batch_size, max_length, max_length)) - 1

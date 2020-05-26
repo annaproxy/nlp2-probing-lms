@@ -203,7 +203,8 @@ def create_or_load_structural_data(set_type:str, lm, w2i, cutoff=None, extra_tra
 
 
 def print_tikz(prediction_edges, gold_edges, words, split_name):
-    ''' Turns edge sets on word (nodes) into tikz dependency LaTeX. '''
+    ''' Turns edge sets on word (nodes) into tikz dependency LaTeX.
+    For OUR specific representation see Training.ipynb waayyy below. '''
     with open(os.path.join( split_name+'.tikz'), 'a') as fout:
         string = """\\begin{dependency}[hide label, edge unit distance=.5ex]
         \\begin{deptext}[column sep=0.05cm]
