@@ -15,5 +15,6 @@ The notebooks are largely based on existing pickled file. If for any reason you 
 
 # Dependencies
 
-pytorch, ete3, conllu, transformers.
+pytorch, ete3, conllu, transformers, nltk. 
+
 
