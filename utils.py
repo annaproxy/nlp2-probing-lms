@@ -34,11 +34,11 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
         pos_result = []
         
     model.eval()
+    model.cuda()
     doing_lstm = type(model) == RNNModel
     print(f"Doing LSTM: {doing_lstm}")
     sentences_result = []
     global_words = []
-    
     for sentence_nr, sentence in tqdm(enumerate(ud_parses)):
         sentence_words = []
         if shuffled:
@@ -96,7 +96,7 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
                     e = tokenizer.encode(word.strip())
                     representation += e
                     sizes.append(len(e))
-            the_input = torch.tensor(representation)
+            the_input = torch.tensor(representation).cuda()
             with torch.no_grad():
                 the_input = the_input.unsqueeze(0)
                 result = model(the_input)[0]
