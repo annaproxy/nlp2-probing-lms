@@ -27,7 +27,7 @@ def parse_corpus(filename: str) -> List[TokenList]:
 
 def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, get_pos = False, shuffled=False) -> List[Tensor]:
     """
-    Returns a list of length len(ud_parses)
+    Returns a list of length len(ud_parses), or a tensor of total_word_len * repr_size.
     """
     if get_pos:
         global last, pos_w2i, pos_i2w
@@ -36,7 +36,6 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
     model.eval()
     model.cuda()
     doing_lstm = type(model) == RNNModel
-    print(f"Doing LSTM: {doing_lstm}")
     sentences_result = []
     global_words = []
     for sentence_nr, sentence in tqdm(enumerate(ud_parses)):
@@ -122,7 +121,6 @@ def fetch_sen_reps(ud_parses: List[TokenList], model, tokenizer, concat=True, ge
     return [s for s in sentences_result] #, global_words
 
 
-def bitch(x): return x+5
 # I provide the following sanity check, that compares your representations against a pickled version of mine.
 # Note that I use the DistilGPT-2 LM here. For the LSTM I used 0-valued initial states.
 def assert_sen_reps(transformer, tokenizer, lstm, vocab):
